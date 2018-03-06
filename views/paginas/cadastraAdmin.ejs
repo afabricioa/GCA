@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <% include ../templates/configs %>
+<body id="grad1">
+  <div id="msgAlerta"></div>
+  <div class="panel panel-default panel-cadastro">
+    <div class="panel-body">
+      <h3 style="text-align: center;">Administrador</h3>
+      <div class="form-group" style="margin-top: 30px;">
+          <div class="col-xs-12">
+            <input type="email" class="form-control" name="emailAdmin" id="emailAdmin"
+              placeholder="Email"
+              pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,3}$" required>
+          </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 80px;">
+          <div class="col-xs-12">
+              <input type="password" class="form-control" name="senha1" id="senha1" placeholder="Senha" required>
+          </div>
+      </div>
+      <div class="form-group" style="margin-top: 130px;">
+          <div class="col-xs-12">
+              <input type="password" class="form-control" name="senha2" id="senha2" placeholder="Senha" required>
+          </div>
+      </div>
+      <div class="form-group" style="margin-top: 220px;">
+        <button type="submit"
+          class="btn btn-default btn-lg btn-block btn-primary" id="cadastrar" onclick="save_user();">Cadastrar</button>
+      </div>
+      <div class="form-group">
+        <div class="row">
+          <div class="col-lg-11">
+            <div class="text-center">
+              <a href='/' style="width: auto; margin-left: -1px;" tabindex="5">Já possui cadastro?</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+	 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="javascripts/bootstrap.min.js"></script>
+
+    <script>
+      function save_user() {
+          var emailAdmin = document.getElementById('emailAdmin').value;
+          var senha1 = document.getElementById('senha1').value;
+          var senha2 = document.getElementById('senha2').value;
+          var uid = firebase.database().ref().child('users').push().key;
+          var users = firebase.database().ref().child('users');
+
+          users.orderByChild("emailAdmin").equalTo(emailAdmin).once("value",snapshot => {
+              const userData = snapshot.val();
+              if (userData) {
+                  $("#emailAdmin").addClass("erro");
+                  document.getElementById("msgAlerta").innerHTML = '<div class="alert alert-danger alerta-alertaerro" role="alert">Email já cadastrado!</div>';
+              }
+              else {
+                if(senha1 != senha2){
+                  $("#senha1").addClass("erro");
+                  $("#senha2").addClass("erro");
+                  document.getElementById("msgAlerta").innerHTML = '<div class="alert alert-danger alerta-alertaerro" role="alert"><strong>Senhas diferentes! Tente novamente</strong></div>';
+                }else{
+                  var data = {
+                      user_id: uid,
+                      emailAdmin: emailAdmin,
+                      senha1: senha1
+                    }
+
+                  alert('Admin cadastrado com sucesso!');
+
+                  var updates = {};
+                  updates['/users/' + uid] = data;
+                  firebase.database().ref().update(updates);
+
+                  window.location="/login";
+
+                }
+              }
+          });
+      }
+    </script>
+
+
+</body>
+
+</html>

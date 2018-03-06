@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <% include ../templates/configs %>
+<body>
+
+<!-- navbar -->
+<% include ../templates/nav %>
+
+<!-- menu lateral-->
+<% include ../templates/menulateral %>
+
+<div class="main">
+  <div class="panel panel-default">
+    <!-- Default panel contents -->
+    <div class="panel-heading"><h3 style="margin-left: 450px;">Lista de Associações</h3></div>
+    <!-- Table -->
+      <table id="tabelaUsuarios" class="table">
+        <tr>
+          <td>#</td>
+          <td>Nome</td>
+          <td>Endereço</td>
+          <td>Sigla</td>
+          <td>Estado</td>
+          <td>Cidade</td>
+          <td>Supervisor</td>
+        </tr>
+      </table>
+  </div>
+</div>
+
+	 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="javascripts/bootstrap.min.js"></script>
+
+    <script>
+      var tblUsers = document.getElementById('tabelaUsuarios');
+      var databaseRef = firebase.database().ref('associacoes/');
+      //var databaseRef = FirebaseFirestore.database().ref('/users');
+      var rowindex = 1;
+      var indice = 1;
+
+      databaseRef.once('value', function(snapshot) {
+          snapshot.forEach(function(childSnapshot) {
+
+              var linkDetalhes = document.createElement('a');
+              var designarSupervisor = document.createElement('a');
+
+              var childKey = childSnapshot.key;
+              var childData = childSnapshot.val();
+
+              var row = tblUsers.insertRow(rowindex);
+              var cellNumero = row.insertCell(0);
+              var cellNome = row.insertCell(1);
+              var cellEndereco = row.insertCell(2);
+              var cellSigla = row.insertCell(3);
+              var cellEstado = row.insertCell(4)
+              var cellCidade = row.insertCell(5);
+              var cellSupervisor = row.insertCell(6);
+              var cellDelete = row.insertCell(7);
+
+              cellNumero.appendChild(document.createTextNode(indice));
+
+              var createAText = document.createTextNode(childData.nome);
+              var textSupervisor = document.createTextNode("Designar Supervisor");
+              var linkD = "detalhesAssociacao?id="+childKey;
+
+
+              designarSupervisor.setAttribute('href', linkD);
+              linkDetalhes.setAttribute('href', linkD);
+              designarSupervisor.appendChild(textSupervisor);
+              linkDetalhes.appendChild(createAText);
+
+              cellNome.appendChild(linkDetalhes);
+              cellEndereco.appendChild(document.createTextNode(childData.endereco));
+              cellSigla.appendChild(document.createTextNode(childData.sigla));
+              cellEstado.appendChild(document.createTextNode(childData.estado));
+              cellCidade.appendChild(document.createTextNode(childData.cidade));
+              if(!childData.nome_supervisor){
+                cellSupervisor.appendChild(designarSupervisor);
+              }else{
+                cellSupervisor.appendChild(document.createTextNode(childData.nome_supervisor));
+              }
+
+              rowindex = rowindex + 1;
+              indice = indice + 1;
+          });
+      });
+
+    </script>
+</body>
+
+</html>

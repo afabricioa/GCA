@@ -1,0 +1,52 @@
+<!-- menu lateral side bar views/templates/menulateral.js -->
+
+<script>
+
+  var associacao;
+  var databaseRef = firebase.database().ref('associados');
+  var x = localStorage.getItem('x');
+
+    databaseRef.orderByChild("email").equalTo(x).once('value', function(snapshot){
+      snapshot.forEach(function (childSnapshot) {
+        var childData = childSnapshot.val();
+        associacao = childData.idAssociacao;
+      });
+    });
+
+  function openDetalhes(){
+    location.href = "detalhesAssociacaoAssociado?id=" + associacao;
+  }
+
+  function openReunioes(){
+    location.href = "reunioes";
+  }
+
+  function openTaxas(){
+    location.href = "pagamentos";
+  }
+</script>
+
+<nav class="navbar navbar-inverse sidebar" role="navigation">
+  <div class="container-fluid">
+  <!-- Brand and toggle get grouped for better mobile display -->
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-sidebar-navbar-collapse-1">
+      <span class="sr-only">Toggle navigation</span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="#">Menu</a>
+  </div>
+  <!-- Collect the nav links, forms, and other content for toggling -->
+  <div class="collapse navbar-collapse" id="bs-sidebar-navbar-collapse-1">
+    <ul class="nav navbar-nav">
+      <li class="active"><a href="/paginaAssociado">Inicio<span style="font-size:16px;"></span></a></li>
+      <li><a href="javaScript:openDetalhes();">Associação<span style="font-size:16px;"></a></li>
+      <li><a href="javaScript:openReunioes();">Reuniões<span style="font-size:16px;"></span></a></li>
+      <li><a href="javaScript:openTaxas();">Pagamentos<span style="font-size:16px;"></span></a></li>
+    </ul>
+    </ul>
+  </div>
+</div>
+</nav>

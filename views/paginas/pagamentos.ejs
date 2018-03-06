@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <% include ../templates/configs %>
+<body>
+
+<!-- navbar -->
+<% include ../templates/nav %>
+
+<!-- menu lateral-->
+<% include ../templates/menuAssociado %>
+
+<div class="main">
+  <div class="panel panel-primary">
+    <!-- Default panel contents -->
+    <div class="panel-heading"><h3 style="margin-left: 500px;" id="associacao"></h3></div>
+    <!-- Table -->
+      <table id="tabelaTaxas" class="table">
+        <tr>
+          <td>#</td>
+          <td>Nome</td>
+          <td>Vigencia</td>
+          <td>Valor</td>
+          <td>Parcelas</td>
+        </tr>
+      </table>
+  </div>
+</div>
+
+	 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="javascripts/bootstrap.min.js"></script>
+<script>
+  var userLogado;
+  var cpf;
+  var keyAssociacao;
+  var databaseRef = firebase.database().ref('associados');
+  $(document).ready(function() {
+    userLogado = $("#userLog").html();
+    databaseRef.orderByChild("email").equalTo(userLogado).once('value', function(snapshot){
+        snapshot.forEach(function (childSnapshot) {
+          var childData = childSnapshot.val();
+          associacao = childData.associacao;
+          cpf = childData.cpf;
+          document.getElementById("associacao").innerHTML = associacao;
+
+          var tblTaxas = document.getElementById('tabelaTaxas');
+          var databaseRefTaxas = firebase.database().ref('associados/'+ cpf + '/taxas/');
+          //var databaseRef = FirebaseFirestore.database().ref('/users');
+          var rowindex = 1;
+          var indice = 1;
+
+          firebase.database().ref('associados/'+cpf).on('value', function(snap){
+            if(snap.hasChild('taxas')){
+              databaseRefTaxas.on('value', function(snapshot) {
+                snapshot.forEach(function(childSnapshot) {
+                      var taxa = childSnapshot.val();
+                      var taxaNome = childSnapshot.key;
+                      var linkPagamento = document.createElement('a');
+
+                      var row = tblTaxas.insertRow(rowindex);
+                      var cellNumero = row.insertCell(0);
+                      var cellNome = row.insertCell(1);
+                      var cellVigencia = row.insertCell(2);
+                      var cellValor = row.insertCell(3);
+                      var cellParcelas = row.insertCell(4);
+                      var cellDebito = row.insertCell(5);
+
+                      var textoPagamento;
+                      var linkD
+                      if(taxa.valor > 0){
+                        textoPagamento = document.createTextNode("Em débito");
+                        linkD = "pagamentoTaxa?nome="+taxaNome+'&id='+cpf;
+                      }else{
+                        textoPagamento = document.createTextNode("Debitada");
+                        linkD = "pagamentos";
+                      }
+
+
+
+                      linkPagamento.setAttribute('href', linkD);
+                      linkPagamento.appendChild(textoPagamento);
+
+                      cellNumero.appendChild(document.createTextNode(indice));
+                      cellNome.appendChild(document.createTextNode(taxaNome));
+                      cellVigencia.appendChild(document.createTextNode(taxa.vigencia));
+                      cellValor.appendChild(document.createTextNode("R$" + taxa.valor));
+                      cellParcelas.appendChild(document.createTextNode(taxa.parcelas));
+                      cellDebito.appendChild(linkPagamento);
+
+                      rowindex = rowindex + 1;
+                      indice = indice + 1;
+                  });
+              });
+            }else{
+              alert('Sem taxas cadastradas!');
+            }
+          });
+        });
+    });
+  });
+
+
+</script>
+</body>
+
+</html>

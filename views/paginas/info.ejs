@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <% include ../templates/configs %>
+<body>
+
+<!-- navbar -->
+<% include ../templates/nav %>
+
+<!-- menu lateral-->
+<% include ../templates/menuAssociado %>
+
+<div class="main">
+  <div style="margin-left: 30px;">
+    <h2>Dados Cadastrados</h2>
+    <div style="font-size: 20px; "id="associado"></div>
+    <div style="font-size: 20px; "id="cpf"></div>
+    <div style="font-size: 20px; "id="email"></div>
+    <div style="font-size: 20px; "id="telefone"></div>
+    <div style="font-size: 20px; "id="associacao"></div>
+  </div>
+</div>
+
+	 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="javascripts/bootstrap.min.js"></script>
+<script>
+    var userLogado;
+    var databaseRef = firebase.database().ref('associados');
+    userLogado = $("#userLog").html();
+    databaseRef.orderByChild("email").equalTo(userLogado).once('value', function(snapshot){
+        snapshot.forEach(function (childSnapshot) {
+          var childData = childSnapshot.val();
+          document.getElementById("associado").innerHTML = "Nome: " + childData.nome;
+          document.getElementById("cpf").innerHTML = "CPF: " + childData.cpf;
+          document.getElementById("email").innerHTML = "Email: " + childData.email;
+          document.getElementById("telefone").innerHTML = "Telefone: " + childData.telefone;
+          document.getElementById("associacao").innerHTML = "Associação: " + childData.associacao;
+        });
+      });
+</script>
+</body>
+
+</html>

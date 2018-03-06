@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <% include ../templates/configs %>
+<body>
+
+<!-- navbar -->
+<% include ../templates/nav %>
+
+<!-- menu lateral-->
+<% include ../templates/menuSupervisor %>
+
+<div class="main">
+  <div class="panel panel-primary" style="height:600px;">
+  <div class="panel-heading"><h3 style="margin-left: 500px;">Cadastro de Taxa</h3></div>
+  <br>
+  <h4 id="associacao" style="margin-left: 40px;"></h4>
+  <br>
+
+    <div class="form-group" style="margin-top: 30px;">
+      <label for="nome" class="control-label col-xs-1">Nome*</label>
+        <div class="col-xs-5">
+          <input type="text" class="form-control" name="nome" id="nome"
+            placeholder="Nome" required>
+          <div id="msgAlertaNome" style="color: #b71f0e;"></div>
+        </div>
+    </div>
+
+      <div class="form-group" style="margin-top: 100px;">
+          <label for="vigencia" class="control-label col-xs-1">Vigência*</label>
+          <div class="col-xs-5">
+              <input type="text" class="form-control" name="vigencia" id="vigencia" placeholder="Vigência" pattern="[2-9]{1}[0-9]{3}" required>
+              <div id="msgAlertaVigencia" style="color: #b71f0e;"></div>
+          </div>
+      </div>
+        <div class="form-group" style="margin-top: 170px;">
+          <label for="valor" class="control-label col-xs-1">Valor Anual(R$)*</label>
+          <div class="col-xs-5">
+                <input type="number" class="form-control" id="valor" name="valor" placeholder="Valor" min="0" required>
+                <div id="msgAlertaValor" style="color: #b71f0e;"></div>
+            </div>
+        </div>
+        <div class="form-group" style="margin-top: 240px;">
+          <label for="parcelas" class="control-label col-xs-1">Parcelas*</label>
+          <div class="col-xs-5">
+              <input  type="number" class="form-control" id="parcelas" name="parcelas" pattern="[0-9]{10}" required>
+              <div id="msgAlertaParcela" style="color: #b71f0e;"></div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 300px;">
+            <div class="col-xs-offset-2 col-xs-15">
+                <button type="submit" class="btn btn-primary" onclick="cadastraTaxa();">Cadastrar</button>
+            </div>
+        </div>
+  </div>
+</div>
+
+	 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="javascripts/bootstrap.min.js"></script>
+    <script>
+
+      //busca o nome da associação pela qual essa pessoa é supervisora
+      var userLogado;
+      var associacao;
+      var keyAssociacao;
+      var membros = [];
+      var databaseRef = firebase.database().ref('associados');
+      $(document).ready(function() {
+        userLogado = $("#userLog").html();
+        databaseRef.orderByChild("email").equalTo(userLogado).once('value', function(snapshot){
+            snapshot.forEach(function (childSnapshot) {
+              var childData = childSnapshot.val();
+              associacao = childData.nome_associacao;
+              keyAssociacao = childData.id_associacao;
+              document.getElementById("associacao").innerHTML = "Nome da associação: " + associacao;
+            });
+        });
+      });
+
+      function cadastraTaxa(){
+        var nome = document.getElementById('nome');
+        var vigencia = document.getElementById('vigencia');
+        var valor = document.getElementById('valor');
+        var parcelas = document.getElementById('parcelas');
+        var dataRef = firebase.database().ref('/associacoes/'+ keyAssociacao);
+        var dataRef2 = firebase.database().ref('/associacoes/'+ keyAssociacao + '/taxas/');
+        //var associacoes = firebase.database().ref().child('associados');
+        if (!nome.checkValidity()) {
+            document.getElementById("msgAlertaNome").innerHTML = "Preencha o campo";
+        } else if(!vigencia.checkValidity()){
+            document.getElementById("msgAlertaVigencia").innerHTML = "Vigência inválida";
+        } else if(!valor.checkValidity()){
+            document.getElementById("msgAlertaValor").innerHTML = "Valor inválido";
+        } else if(!vigencia.checkValidity()){
+            document.getElementById("msgAlertaParcelas").innerHTML = "Parcela inválida";
+        }else{
+          dataRef.on('value', function(snapshot) {
+            if(snapshot.hasChild('taxas')){
+              dataRef2.on('value', function(snap) {
+                  if(snap.hasChild(nome.value)){
+                    $("#nome").addClass("erro");
+                    document.getElementById("msgAlerta").innerHTML = '<strong>Taxa já cadastrada!</strong>';
+                  }else{
+                    var dataTaxa2 = {
+                        valor: valor.value,
+                        vigencia: vigencia.value,
+                        parcelas: parcelas.value
+                      }
+
+                      alert('Taxa cadastrada com sucesso!');
+                      var updates2 = {};
+                      updates2['/associacoes/'+ keyAssociacao + '/taxas/' + nome.value] = dataTaxa2;
+                      firebase.database().ref().update(updates2);
+                      window.location="/paginaSupervisor";
+                  }
+              });
+            }else{
+              alert('Taxa cadastrada com sucesso!');
+              var dataTaxa = {
+                  valor: valor.value,
+                  vigencia: vigencia.value,
+                  parcelas: parcelas.value
+                }
+              var updates = {};
+              updates['/associacoes/'+ keyAssociacao + '/taxas/' + nome.value] = dataTaxa;
+              firebase.database().ref().update(updates);
+              window.location="/paginaSupervisor";
+            }
+          });
+        }
+
+      }
+    </script>
+</body>
+
+</html>

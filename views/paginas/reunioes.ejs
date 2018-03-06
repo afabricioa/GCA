@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <% include ../templates/configs %>
+<body>
+
+<!-- navbar -->
+<% include ../templates/nav %>
+
+<!-- menu lateral-->
+<% include ../templates/menuAssociado %>
+
+<div class="main">
+  <div class="panel panel-primary">
+    <!-- Default panel contents -->
+    <div class="panel-heading"><h3 style="margin-left: 500px;" id="associacao"></h3></div>
+    <!-- Table -->
+    <h4 style="text-align: center;">Reuniões anteriores</h4>
+    <table id="tabelaReunioesPassadas" class="table">
+      <tr>
+        <td>#</td>
+        <td>Descrição</td>
+        <td>Dia</td>
+        <td>Hora</td>
+      </tr>
+    </table>
+    <br>
+    <br>
+    <h4 style="text-align: center;">Reuniões futuras</h4>
+    <table id="tabelaReunioesFuturas" class="table">
+      <tr>
+        <td>#</td>
+        <td>Descrição</td>
+        <td>Dia</td>
+        <td>Hora</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+	 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="javascripts/bootstrap.min.js"></script>
+<script>
+  var userLogado;
+  var associacao;
+  var keyAssociacao;
+  var today = new Date();
+  var dd = today.getDate();
+  var mm = today.getMonth()+1; //January is 0!
+  var yyyy = today.getFullYear();
+
+  if(dd<10) {
+    dd = '0'+dd
+  }
+
+  if(mm<10) {
+    mm = '0'+mm
+  }
+
+  today = dd + '/' + mm + '/' + yyyy;
+
+  var databaseRef = firebase.database().ref('associados');
+  $(document).ready(function() {
+    userLogado = $("#userLog").html();
+    databaseRef.orderByChild("email").equalTo(userLogado).once('value', function(snapshot){
+        snapshot.forEach(function (childSnapshot) {
+          var childData = childSnapshot.val();
+          associacao = childData.associacao;
+          keyAssociacao = childData.idAssociacao;
+          document.getElementById("associacao").innerHTML = associacao;
+
+          var tblReunioesPassadas = document.getElementById('tabelaReunioesPassadas');
+          var tblReunioesFuturas = document.getElementById('tabelaReunioesFuturas');
+          var databaseRefReunioes = firebase.database().ref('associacoes/'+ keyAssociacao + '/reunioes/');
+          //var databaseRef = FirebaseFirestore.database().ref('/users');
+          var rowindex = 1;
+          var indice = 1;
+          var rowindex2 = 1;
+          var indice2 = 1;
+
+          databaseRefReunioes.on('value', function(snapshot) {
+            snapshot.forEach(function(childSnapshot) {
+                  var reuniao = childSnapshot.val();
+                  var reuniaoDesc = childSnapshot.key;
+
+                  var linkFrequencia = document.createElement('a');
+                  var linkDetalhes = document.createElement('a');
+
+
+                  if(reuniao.dia.toString() < today){
+                    var row = tblReunioesPassadas.insertRow(rowindex);
+                    var cellNumero = row.insertCell(0);
+                    var cellNome = row.insertCell(1);
+                    var cellDia = row.insertCell(2);
+                    var cellHora = row.insertCell(3);
+                    var cellFrequencia = row.insertCell(4);
+
+                    var createTextReu = document.createTextNode(reuniaoDesc);
+                    var createAText = document.createTextNode("Info");
+                    //var linkD;
+                    //var linkR = "detalhesReuniao?id=" + keyAssociacao + "&desc=" + reuniaoDesc;
+
+                    var databaseRefFrequencia = firebase.database().ref('associacoes/'+ keyAssociacao + '/reunioes/' + reuniaoDesc);
+                    databaseRefFrequencia.on('value', function(snap){
+                      if(snap.hasChild('frequencia')){
+                        linkD = "detalhesReuniao?id=" + keyAssociacao + "&desc=" + reuniaoDesc;
+                      }else{
+                        linkD = "frequenciaReuniao?id="+ keyAssociacao + "&desc=" + reuniaoDesc;
+                      }
+                    });
+
+
+                    linkFrequencia.setAttribute('href', linkD);
+                    linkFrequencia.appendChild(createAText);
+
+                    cellNumero.appendChild(document.createTextNode(indice));
+                    cellNome.appendChild(document.createTextNode(reuniaoDesc));
+                    cellDia.appendChild(document.createTextNode(reuniao.dia));
+                    cellHora.appendChild(document.createTextNode(reuniao.hora));
+                    cellFrequencia.appendChild(linkFrequencia)
+
+
+                    rowindex = rowindex + 1;
+                    indice = indice + 1;
+                  }else{
+                    var row = tblReunioesFuturas.insertRow(rowindex2);
+                    var cellNumero = row.insertCell(0);
+                    var cellNome = row.insertCell(1);
+                    var cellDia = row.insertCell(2);
+                    var cellHora = row.insertCell(3);
+                    var cellFrequencia = row.insertCell(4);
+
+
+                    var createTextReu = document.createTextNode(reuniaoDesc);
+                    var createAText = document.createTextNode("Info");
+                    //var linkD;
+                    //var linkR = "detalhesReuniao?id=" + keyAssociacao + "&desc=" + reuniaoDesc;
+
+                    var databaseRefFrequencia = firebase.database().ref('associacoes/'+ keyAssociacao + '/reunioes/' + reuniaoDesc);
+                    databaseRefFrequencia.on('value', function(snap){
+                      if(snap.hasChild('frequencia')){
+                        linkD = "detalhesReuniao?id=" + keyAssociacao + "&desc=" + reuniaoDesc;
+                      }else{
+                        linkD = "frequenciaReuniao?id="+ keyAssociacao + "&desc=" + reuniaoDesc;
+                      }
+                    });
+
+
+                    linkFrequencia.setAttribute('href', linkD);
+                    linkFrequencia.appendChild(createAText);
+
+                    cellNumero.appendChild(document.createTextNode(indice2));
+                    cellNome.appendChild(document.createTextNode(reuniaoDesc));
+                    cellDia.appendChild(document.createTextNode(reuniao.dia));
+                    cellHora.appendChild(document.createTextNode(reuniao.hora));
+                    cellFrequencia.appendChild(linkFrequencia)
+
+                    rowindex2 = rowindex2 + 1;
+                    indice2 = indice2 + 1;
+                  }
+              });
+          });
+        });
+    });
+  });
+
+</script>
+</body>
+
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <% include ../templates/configs %>
+<body>
+
+<!-- navbar -->
+<% include ../templates/nav %>
+
+<!-- menu lateral-->
+<% include ../templates/menulateral %>
+
+<div class="main">
+  <div class="panel panel-primary" style="height:600px;">
+    <div class="panel-heading">
+      <h1 class="panel-title" id="nome"></h1>
+    </div>
+    <div class="panel-body">
+      <h4 id="endereco"></h4>
+      <h4 id="cidade"></h4>
+      <h4 id="estado"></h4>
+      <h4 id="nome_supervisor"></h4>
+      <h4 id="email_supervisor"></h4>
+      <h4 id="supervisor"></h4>
+      <div id="selectSupervisor"></div>
+      <h4 id="associadoN"></h4>
+      <h4 id="associadoE"></h4>
+      <div id="botaoRegistrar"></div>
+      <div class="form-group" style="margin-top: 50px; margin-left: 10px;">
+        <div>
+          <button type="submit" class="btn btn-danger" onclick="removeAss();">Excluir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+	 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="javascripts/bootstrap.min.js"></script>
+<script>
+
+  var idAssociacao = getQueryVariable("id");
+  var nomeAssociacao;
+  var endereco;
+  var sigla;
+  var estado;
+  var cidade;
+  var nome_supervisor;
+  var email_supervisor;
+
+  function getQueryVariable(variable){
+     var query = window.location.search.substring(1);
+     var vars = query.split("&");
+     for (var i=0;i<vars.length;i++) {
+             var pair = vars[i].split("=");
+             if(pair[0] == variable){return pair[1];}
+     }
+     return(false);
+   }
+
+   var databaseRef = firebase.database().ref('associacoes/' + idAssociacao).once('value', function(snapshot){
+      nomeAssociacao = snapshot.val().nome;
+      endereco = snapshot.val().endereco;
+      sigla = snapshot.val().sigla;
+      estado = snapshot.val().estado;
+      cidade = snapshot.val().cidade;
+      nome_supervisor = snapshot.val().nome_supervisor;
+      email_supervisor = snapshot.val().email_supervisor;
+
+
+     if(!nome_supervisor){
+       var linkDesignar = document.createElement('a');
+       //var createAText = document.createTextNode('Designar');
+       linkDesignar.textContent = "Designar Supervisor";
+       linkDesignar.href = "javaScript:selecionar();";
+       //linkDesignar.appendChild(createAText);
+       document.getElementById("supervisor").appendChild(linkDesignar);
+     }else{
+       document.getElementById("nome_supervisor").innerHTML = "Supervisor: " + nome_supervisor;
+       document.getElementById("email_supervisor").innerHTML = "Email: " + email_supervisor;
+     }
+
+
+
+
+     document.getElementById("nome").innerHTML = nomeAssociacao;
+     document.getElementById("endereco").innerHTML = "Endereço: " + endereco;
+     document.getElementById("estado").innerHTML = "Estado: " + estado + " - " + sigla;
+     document.getElementById("cidade").innerHTML = "Cidade: " + cidade;
+
+
+   });
+   //var databaseRef = FirebaseFirestore.database().ref('/users');
+
+   var associados = firebase.database().ref('associados');
+   var assoc = [];
+
+   associados.once('value', function(snapshot) {
+       snapshot.forEach(function(childSnapshot) {
+            if(childSnapshot.val().role == "supervisor"){
+              var ass = childSnapshot.val();
+              assoc.push(ass);
+            }
+       });
+   });
+
+   function selecionar(){
+     var tagSelect = document.createElement('select'), option, i = 0, l = assoc.length;
+     tagSelect.setAttribute("id", "selectAssociado");
+     tagSelect.setAttribute("onchange", "mostra();");
+     document.body.appendChild(tagSelect);
+     for (; i < l; i += 1) {
+       option = document.createElement('option');
+       option.setAttribute('value', assoc[i].user_id);
+       option.appendChild(document.createTextNode(assoc[i].cpf));
+       tagSelect.appendChild(option);
+     }
+     document.getElementById("selectSupervisor").appendChild(tagSelect);
+
+     //htmlselect.appendChild(tagSelect);
+     $('#botaoRegistrar').html(
+       '<div class="form-group" style="margin-top: 50px; margin-left: 10px;">'+
+       '<div>'+
+       '<button type="submit" class="btn btn-primary" onclick="registra();">'+
+       'Registrar</button></div></div>')
+   }
+
+   function mostra(){
+     var assSelecionado = document.getElementById("selectAssociado");
+     var cpfAss = assSelecionado.options[assSelecionado.selectedIndex].text;
+     var associadoRef = firebase.database().ref('associados/' + cpfAss).once('value', function(snapshot){
+       var nomeAssociado = snapshot.val().nome;
+       var emailAss = snapshot.val().email;
+       document.getElementById("associadoN").innerHTML = nomeAssociado;
+       document.getElementById("associadoE").innerHTML = emailAss;
+     });
+
+   }
+
+   function registra(){
+      var associadoSelecionado = document.getElementById("selectAssociado");
+      var idAssociado = associadoSelecionado.options[associadoSelecionado.selectedIndex].value;
+      var cpfAssociado = associadoSelecionado.options[associadoSelecionado.selectedIndex].text;
+      var nomeAssociado;
+      var telefoneAssociado;
+      var emailAssociado;
+      var senhaAssociado;
+
+      var associadoReferencia = firebase.database().ref('associados/' + cpfAssociado).once('value', function(snap){
+         nomeAssociado = snap.val().nome;
+         emailAssociado = snap.val().email;
+         senhaAssociado = snap.val().senha1;
+         telefoneAssociado = snap.val().telefone;
+
+         var data = {
+             user_id: idAssociado,
+             nome: nomeAssociado,
+             email: emailAssociado,
+             senha1: senhaAssociado,
+             telefone: telefoneAssociado,
+             cpf: cpfAssociado,
+             nome_associacao: nomeAssociacao,
+             id_associacao: idAssociacao,
+             role: "supervisor"
+         }
+
+         alert('Supervisor Registrado!');
+         var updates = {};
+         updates['/associados/' + cpfAssociado] = data;
+         firebase.database().ref().update(updates);
+
+
+         var dataAssociacao = {
+            associacao_id: idAssociacao,
+            nome: nomeAssociacao,
+            endereco: endereco,
+            sigla: sigla,
+            estado: estado,
+            cidade: cidade,
+            nome_supervisor: nomeAssociado,
+            email_supervisor: emailAssociado
+          }
+
+
+          var updatesAssociacao = {};
+          updatesAssociacao['/associacoes/' + idAssociacao] = dataAssociacao;
+          firebase.database().ref().update(updatesAssociacao);
+
+          location.reload();
+
+       });
+   }
+
+   function removeAss(){
+     var dataRef = firebase.database().ref('associacoes/' + idAssociacao);
+     dataRef.on('value', function(snapshot) {
+       if(snapshot.hasChild('membros')){
+         alert('Operação indevida, associação com membros cadastrados!');
+       }else{
+         firebase.database().ref().child('associacoes/' + idAssociacao).remove();
+         alert('Associação excluida com sucesso!');
+         window.location="/listarAssociacoes";
+       }
+     });
+   }
+
+
+
+</script>
+</body>
+
+</html>

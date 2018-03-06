@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <% include ../templates/configs %>
+<body>
+
+<!-- navbar -->
+<% include ../templates/nav %>
+
+<!-- menu lateral-->
+<% include ../templates/menuSupervisor %>
+
+<div class="main">
+  <div class="panel panel-primary">
+    <!-- Default panel contents -->
+    <div class="panel-heading"><h3 style="margin-left: 500px;" id="associacao"></h3></div>
+    <!-- Table -->
+      <table id="tabelaAssociados" class="table">
+        <tr>
+          <td>#</td>
+          <td>Nome</td>
+          <td>Email</td>
+          <td>Telefone</td>
+        </tr>
+      </table>
+  </div>
+
+  <div class="form-group" style="margin-top: 50px; margin-left: -240px;">
+      <div class="col-xs-offset-2 col-xs-15">
+          <button type="submit" class="btn btn-primary" onclick="window.location='/cadastraMembroAssociacao';">Novo Associado</button>
+      </div>
+  </div>
+</div>
+
+	 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="javascripts/bootstrap.min.js"></script>
+<script>
+  var userLogado;
+  var associacao;
+  var membros = [];
+  var databaseRef = firebase.database().ref('associados');
+  $(document).ready(function() {
+    userLogado = $("#userLog").html();
+    databaseRef.orderByChild("email").equalTo(userLogado).once('value', function(snapshot){
+        snapshot.forEach(function (childSnapshot) {
+          var childData = childSnapshot.val();
+          associacao = childData.nome_associacao;
+          document.getElementById("associacao").innerHTML = associacao;
+
+          var tblUsers = document.getElementById('tabelaAssociados');
+          var databaseRefAssociado = firebase.database().ref('associados');
+          //var databaseRef = FirebaseFirestore.database().ref('/users');
+          var rowindex = 1;
+          var indice = 1;
+
+          databaseRefAssociado.orderByChild("associacao").equalTo(associacao).once('value', function(snapshot){
+              snapshot.forEach(function(childSnapshot) {
+                  var childKey = childSnapshot.key;
+                  var childData = childSnapshot.val();
+                  var x = childKey;
+                  var zero = "0";
+
+                  var str = x.toString();
+
+                  var icone = document.createElement('span');
+                  icone.className = 'glyphicon glyphicon-trash';
+                  icone.setAttribute('aria-hidden' , 'true');
+                  if(str.charAt(0) == "0"){
+                    icone.setAttribute('onclick', 'javaScript:deleta('+ zero + ',' + str +');');
+                  }else{
+                    zero = "1";
+                    icone.setAttribute('onclick', 'javaScript:deleta('+ zero + ',' + x +');');
+                  }
+
+
+                  var row = tblUsers.insertRow(rowindex);
+                  var cellNumero = row.insertCell(0);
+                  var cellNome = row.insertCell(1);
+                  var cellEmail = row.insertCell(2);
+                  var cellTelefone = row.insertCell(3);
+                  var cellDelete = row.insertCell(4);
+
+                  cellNumero.appendChild(document.createTextNode(indice));
+                  cellNome.appendChild(document.createTextNode(childData.nome));
+                  cellEmail.appendChild(document.createTextNode(childData.email));
+                  cellTelefone.appendChild(document.createTextNode(childData.telefone));
+                  cellDelete.appendChild(icone);
+
+                  rowindex = rowindex + 1;
+                  indice = indice + 1;
+              });
+          });
+        });
+    });
+  });
+
+  function deleta(zero, chave){
+      var str = chave.toString();
+      var cpf;
+      if(zero == "1"){
+        firebase.database().ref().child('associados/' + chave).remove();
+        alert('Usuário removido com sucesso!');
+      }else{
+        chave = zero + chave.toString();
+        firebase.database().ref().child('associados/' + chave).remove();
+        alert('Usuário removido com sucesso!');
+      }
+
+
+
+      window.location.reload();
+  }
+
+
+</script>
+</body>
+
+</html>

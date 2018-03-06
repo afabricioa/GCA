@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <% include ../templates/configs %>
+<body>
+
+<!-- navbar -->
+<% include ../templates/nav %>
+
+<!-- menu lateral-->
+<% include ../templates/menuSupervisor %>
+
+<div class="main">
+  <div class="panel panel-primary">
+    <!-- Default panel contents -->
+    <div class="panel-heading"><h3 style="margin-left: 500px;" id="descricao"></h3></div>
+    <!-- Table -->
+    <h4 style="margin-left:20px;">Frequencia de Associados</h4>
+    <div class="panel-body">
+      <table id="tabelaAssociados" class="table">
+        <tr>
+          <td>#</td>
+          <td>Nome</td>
+          <td>CPF</td>
+          <td>Participação</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+	 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="javascripts/bootstrap.min.js"></script>
+<script>
+
+  var nomeReuniao = getQueryVariable("desc");
+  var idAssociacao = getQueryVariable("id");
+
+  function getQueryVariable(variable){
+     var query = window.location.search.substring(1);
+     var vars = query.split("&");
+     for (var i=0;i<vars.length;i++) {
+             var pair = vars[i].split("=");
+             if(pair[0] == variable){return pair[1];}
+     }
+     return(false);
+   }
+
+   var uri_enc = encodeURIComponent(nomeReuniao);
+   var uri_dec = decodeURIComponent(uri_enc);
+
+   var reuniaoDec = decodeURI(uri_dec);
+
+   var arrayAssociados = [];
+   var databaseRefFrequentes = firebase.database().ref('associacoes/' + idAssociacao + '/reunioes/' + reuniaoDec);
+   var databaseRefAssociados = firebase.database().ref('associacoes/' + idAssociacao + '/membros/');
+   document.getElementById("descricao").innerHTML = reuniaoDec;
+
+   databaseRefAssociados.once('value', function(snapshot) {
+       snapshot.forEach(function(childSnapshot) {
+          var ass = childSnapshot.val();
+          var assKey = childSnapshot.key;
+          ass.key = assKey;
+          arrayAssociados.push(ass);
+       });
+   });
+
+   var tblUsers = document.getElementById('tabelaAssociados');
+
+   var databaseRefAssociado = firebase.database().ref('associacoes/'+ idAssociacao + '/reunioes/' + reuniaoDec + '/frequencia/');
+   //var databaseRef = FirebaseFirestore.database().ref('/users');
+   var rowindex = 1;
+   var indice = 1;
+
+   databaseRefAssociado.on('value', function(snapshot){
+       snapshot.forEach(function(childSnapshot) {
+           var presenteKey = childSnapshot.key;
+           var presente = childSnapshot.val();
+
+           var row = tblUsers.insertRow(rowindex);
+           var cellNumero = row.insertCell(0);
+           var cellNome = row.insertCell(1);
+           var cellCpf = row.insertCell(2);
+           var cellParticipacao = row.insertCell(3);
+
+           cellNumero.appendChild(document.createTextNode(indice));
+           cellNome.appendChild(document.createTextNode(presente.nome));
+           cellCpf.appendChild(document.createTextNode(presenteKey));
+           cellParticipacao.appendChild(document.createTextNode(presente.status));
+
+           rowindex = rowindex + 1;
+           indice = indice + 1;
+       });
+   });
+
+
+   var linkDesignar = document.createElement('a');
+   //var createAText = document.createTextNode('Designar');
+   linkDesignar.textContent = "Listar";
+   linkDesignar.href = "javaScript:show();";
+   //linkDesignar.appendChild(createAText);
+   document.getElementById("listar").appendChild(linkDesignar);
+
+    function show(){
+      var i = 0, l = arrayAssociados.length;
+      for (; i < l; i += 1) {
+          var tagCheckBox = document.createElement('input');
+          tagCheckBox.setAttribute("type", "checkbox");
+          tagCheckBox.id = arrayAssociados[i].key; //cpf
+          tagCheckBox.value = arrayAssociados[i].nome;
+          tagCheckBox.name = arrayAssociados[i].nome;
+          var text = document.createTextNode(arrayAssociados[i].nome);
+          document.getElementById('iCheckBox').appendChild(tagCheckBox);
+          document.getElementById('iCheckBox').innerHTML += " ";
+          document.getElementById('iCheckBox').appendChild(text);
+          document.getElementById('iCheckBox').innerHTML += "<br>";
+      }
+    }
+
+    $('#botaoSalvar').html(
+      '<div class="form-group" style="margin-top: 50px; margin-left: 10px;">'+
+      '<div>'+
+      '<button type="submit" class="btn btn-primary" onclick="salvar();">'+
+      'Salvar</button></div></div>')
+
+    function salvar(){
+      var i = 0, l = arrayAssociados.length;
+      var elemento;
+      var dia;
+      for(; i < l; i += 1){
+        elemento = document.getElementById(arrayAssociados[i].key);
+        if(elemento.checked == true){
+            var frequente = {
+              nome: arrayAssociados[i].nome,
+              status: "frequente"
+            }
+
+            var updates = {};
+            updates['/associacoes/'+ idAssociacao + '/reunioes/' + reuniaoDec + '/frequencia/' + arrayAssociados[i].key] = frequente;
+            firebase.database().ref().update(updates);
+
+            databaseRefFrequentes.on('value', function(snap){
+              dia = snap.val().dia;
+            });
+            var frequencia = {
+              data: dia
+            }
+
+            var updates = {};
+            updates['/associados/'+ arrayAssociados[i].key + '/frequenciaReuniao/' + reuniaoDec] = frequencia;
+            firebase.database().ref().update(updates);
+        }else{
+          var frequente = {
+            nome: arrayAssociados[i].nome,
+            status: "ausente"
+          }
+
+          var updates = {};
+          updates['/associacoes/'+ idAssociacao + '/reunioes/' + reuniaoDec + '/frequencia/' + arrayAssociados[i].key] = frequente;
+          firebase.database().ref().update(updates);
+
+        }
+      }
+      alert('Frequencia salva!');
+      window.location="/paginaSupervisor";
+    }
+
+</script>
+</body>
+
+</html>

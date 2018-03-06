@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <% include ../templates/configs %>
+<body>
+
+<!-- navbar -->
+<% include ../templates/nav %>
+
+<!-- menu lateral-->
+<% include ../templates/menuAssociado %>
+
+<div class="main">
+  <div class="panel panel-primary" style="height:600px;">
+    <div class="panel-heading">
+      <h1 class="panel-title" id="nomeTaxa"></h1>
+    </div>
+    <div class="panel-body">
+      <h4 id="nome"></h4>
+      <h4 id="valor"></h4>
+      <h4 id="parcelas"></h4>
+      <!-- <h4 id="selectTaxa"></h4> -->
+      <div class="form-group" style="margin-top: 50px; margin-left: 10px;">
+        <div>
+          <button type="submit" class="btn btn-primary" onclick="pagarTaxa();">Pagar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+	 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="javascripts/bootstrap.min.js"></script>
+<script>
+
+  var nomeTaxa = getQueryVariable("nome");
+  var cpfAssociado = getQueryVariable("id");
+  var nome;
+  var valor;
+  var parcelas;
+
+  function getQueryVariable(variable){
+     var query = window.location.search.substring(1);
+     var vars = query.split("&");
+     for (var i=0;i<vars.length;i++) {
+             var pair = vars[i].split("=");
+             if(pair[0] == variable){return pair[1];}
+     }
+     return(false);
+   }
+
+   var uri_enc = encodeURIComponent(nomeTaxa);
+   var uri_dec = decodeURIComponent(uri_enc);
+
+   var taxaN = decodeURI(uri_dec);
+   document.getElementById("nomeTaxa").innerHTML = taxaN;
+
+   var databaseRef = firebase.database().ref('associados/' + cpfAssociado + '/taxas/' + taxaN).once('value', function(snapshot){
+      nome = snapshot.key;
+      valor = snapshot.val().valor;
+      parcelas = snapshot.val().parcelas;
+      /*var tagSelect = document.createElement('select'), option, i = 0, j = parcelas;
+      var nValor = valor;
+
+      tagSelect.setAttribute("id", "selectPagamento");
+      document.body.appendChild(tagSelect);
+      for (; i < parcelas; i += 1) {
+        option = document.createElement('option');
+        option.setAttribute('value', valor);
+        option.appendChild(document.createTextNode(j + ' x ' + nValor));
+        nValor = valor/j;
+        j = j - 1;
+        tagSelect.appendChild(option);
+      }*/
+
+     document.getElementById("nome").innerHTML = "Nome: " + nome;
+     document.getElementById("valor").innerHTML = "Valor: R$" + valor;
+     document.getElementById("parcelas").innerHTML = "Parcelas: " + parcelas;
+     //document.getElementById("selectTaxa").appendChild(tagSelect);
+   });
+
+   function pagarTaxa(){
+     var ref = firebase.database().ref('associados/' + cpfAssociado + '/taxas/' + taxaN).once('value', function(snapshot){
+        var n = snapshot.key;
+        var v = snapshot.val().valor;
+        var p = snapshot.val().parcelas;
+        var vig = snapshot.val().vigencia;
+
+        var dataTaxaAss = {
+            valor: v - v/p,
+            vigencia: vig,
+            parcelas: p - 1
+          }
+
+        alert('Pagamento efetuado!');
+        var updatesAss = {};
+        updatesAss['/associados/'+ cpfAssociado + '/taxas/' + n] = dataTaxaAss;
+        firebase.database().ref().update(updatesAss);
+
+        window.location="/pagamentos";
+      });
+   }
+
+
+</script>
+</body>
+
+</html>

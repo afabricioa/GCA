@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <% include ../templates/configs %>
+<body>
+
+<!-- navbar -->
+<% include ../templates/nav %>
+
+<!-- menu lateral-->
+<% include ../templates/menuSupervisor %>
+
+<div class="main">
+  <div class="panel panel-primary" style="height:600px;">
+  <h2 style="text-align: center;">Cadastro de Reunião</h2>
+  <br>
+  <h4 id="associacao" style="margin-left: 40px;"></h4>
+  <br>
+
+    <div class="form-group" style="margin-top: 30px;">
+      <label for="nome" class="control-label col-xs-1">Descrição*</label>
+        <div class="col-xs-5">
+          <input type="text" class="form-control" name="descricao" id="descricao"
+            placeholder="Nome" required>
+            <div id="msgAlertaDesc" style="color: #b71f0e;"></div>
+        </div>
+    </div>
+
+      <!--<div class="form-group" style="margin-top: 80px;">
+        <label for="estado" class="control-label col-xs-1">Tipo</label>
+        <select class="select" name="tipo" id="tipo">
+          <option value="ex">Extraordinária</option>
+          <option value="or">Ordinária</option>
+        </select>
+      </div> -->
+      <div class="form-group" style="margin-top: 100px;">
+        <label for="dia" class="control-label col-xs-1">Data*</label>
+        <div class="col-xs-5">
+          <input  type="date" class="form-control" id="dia" name="dia" required>
+          <div id="msgAlertaData" style="color: #b71f0e;"></div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top: 170px;">
+        <label for="hora" class="control-label col-xs-1">Inicio*</label>
+        <div class="col-xs-5">
+            <input type="text" class="form-control" id="hora" name="hora" placeholder="00:00" pattern="[0-2]{1}[0-9]{1}[\:]?[0-5]{1}[0-9]{1}" required>
+            <div id="msgAlertaHora" style="color: #b71f0e;"></div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 240px;">
+        <div class="col-xs-offset-2 col-xs-15">
+          <button type="submit" class="btn btn-primary" onclick="cadastraReuniao();">Cadastrar</button>
+        </div>
+      </div>
+  </div>
+</div>
+
+	 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="javascripts/bootstrap.min.js"></script>
+    <script>
+
+      //busca o nome da associação pela qual essa pessoa é supervisora
+      var userLogado;
+      var associacao;
+      var keyAssociacao;
+      var databaseRef = firebase.database().ref('associados');
+
+      $(document).ready(function() {
+        userLogado = $("#userLog").html();
+        databaseRef.orderByChild("email").equalTo(userLogado).once('value', function(snapshot){
+            snapshot.forEach(function (childSnapshot) {
+              var childData = childSnapshot.val();
+              associacao = childData.nome_associacao;
+              keyAssociacao = childData.id_associacao;
+              document.getElementById("associacao").innerHTML = "Nome da associação: " + associacao;
+            });
+        });
+      });
+
+      function cadastraReuniao(){
+        var descricao = document.getElementById('descricao');
+        var hora = document.getElementById('hora');
+        var dia = document.getElementById('dia');
+        var dataRef = firebase.database().ref('/associacoes/'+ keyAssociacao);
+        var dataRef2 = firebase.database().ref('/associacoes/'+ keyAssociacao + '/reunioes/');
+        var dataRef3 = firebase.database().ref('/associacoes/'+ keyAssociacao + '/reunioes/');
+        var flag = 0;
+        //var associacoes = firebase.database().ref().child('associados');
+
+        if (!descricao.checkValidity()) {
+            document.getElementById("msgAlertaDesc").innerHTML = "Preencha o campo";
+        } else if(!hora.checkValidity()){
+            document.getElementById("msgAlertaHora").innerHTML = "Hora inválida";
+        } else if(!dia.checkValidity()){
+            document.getElementById("msgAlertaDia").innerHTML = "Preencha o campo!";
+        }else{
+          dataRef.on('value', function(snapshot) {
+            if(snapshot.hasChild('reunioes')){
+              dataRef2.on('value', function(snap) {
+                  if(snap.hasChild(descricao.value)){
+                    $("#descricao").addClass("erro");
+                    document.getElementById("msgAlertaDesc").innerHTML = '<strong>Reunião já cadastrada!</strong>';
+                  }else{
+                    dataRef3.once('value', function(snapshot) {
+                        snapshot.forEach(function(childSnapshot) {
+                            var reuniao = childSnapshot.val();
+                            if((reuniao.dia == dia.value) && (reuniao.hora == hora.value)){
+                              flag = flag+1;
+                            }
+                        });
+                    });
+                    if(flag > 0){
+                      $("#hora").addClass("erro");
+                      document.getElementById("msgAlertaHora").innerHTML = '<strong>Há uma reunião cadastrada nessa mesma data e hora!</strong>';
+                    }else{
+                      alert('Reunião cadastrada com sucesso!');
+                      var reuniao = {
+                        hora: hora.value,
+                        dia: dia.value
+                      }
+                      var updates = {};
+                      updates['/associacoes/'+ keyAssociacao + '/reunioes/' + descricao.value] = reuniao;
+                      firebase.database().ref().update(updates);
+                      window.location="/paginaSupervisor";
+                    }
+                  }
+              });
+            }else{
+              alert('Reunião cadastrada com sucesso!');
+              var reuniao1 = {
+                hora: hora.value,
+                dia: dia.value
+              }
+              var updates = {};
+              updates['/associacoes/'+ keyAssociacao + '/reunioes/' + descricao.value] = reuniao1;
+              firebase.database().ref().update(updates);
+              window.location="/paginaSupervisor";
+            }
+          });
+        }
+      }
+    </script>
+</body>
+
+</html>
